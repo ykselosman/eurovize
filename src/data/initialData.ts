@@ -546,7 +546,7 @@ export const defaultAdmin: User = {
   id: 'admin',
   name: 'Admin',
   email: 'admin@eurovize.com',
-  password: 'admin123',
+  password: '',
   phone: '+90 212 555 0123',
   role: 'admin',
   createdAt: '2024-01-01'

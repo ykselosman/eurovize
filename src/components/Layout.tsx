@@ -65,7 +65,7 @@ export const KVKKBanner: React.FC = () => {
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0a1628] text-white p-4 shadow-2xl border-t border-white/10">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-white/80 text-center sm:text-left">
-          🍪 Web sitemizde deneyiminizi iyileştirmek için çerezler kullanıyoruz. Siteyi kullanmaya devam ederek <span className="text-[#c9a84c] underline cursor-pointer">KVKK Aydınlatma Metni</span> ve <span className="text-[#c9a84c] underline cursor-pointer">Çerez Politikası</span>'nı kabul etmiş olursunuz.
+          🍪 Web sitemizde deneyiminizi iyileştirmek için çerezler kullanıyoruz. Siteyi kullanmaya devam ederek <Link to="/kvkk-aydinlatma" className="text-[#c9a84c] underline">KVKK Aydınlatma Metni</Link> ve <Link to="/cerez-politikasi" className="text-[#c9a84c] underline">Çerez Politikası</Link>'nı kabul etmiş olursunuz.
         </p>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={() => { setAccepted(true); localStorage.setItem('ev_kvkk', 'true'); }} className="px-5 py-2 bg-[#c9a84c] text-[#0a1628] rounded-lg font-bold text-sm hover:bg-[#d4b65a] transition-colors">
@@ -174,7 +174,7 @@ export const Header: React.FC = () => {
                         </Link>
                         <div className="h-px bg-gray-100 my-1" />
                         {activeServices.map(s => (
-                          <Link key={s.id} to={`/hizmet/${s.id}`} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                          <Link key={s.id} to={`/hizmet/${s.slug || s.id}`} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                             <span className="text-lg">{s.countryFlag}</span>
                             <div>
                               <div className="font-medium text-gray-900">{s.country} - {s.typeName}</div>
@@ -322,7 +322,7 @@ export const Footer: React.FC = () => {
             <h3 className="text-[#c9a84c] font-bold mb-4 text-sm uppercase tracking-wider">Hizmetlerimiz</h3>
             <ul className="space-y-3">
               {activeServices.map(s => (
-                <li key={s.id}><Link to={`/hizmet/${s.id}`} className="text-white/60 hover:text-white transition-colors text-sm flex items-center gap-2"><span>{s.countryFlag}</span> {s.country} {s.typeName}</Link></li>
+                <li key={s.id}><Link to={`/hizmet/${s.slug || s.id}`} className="text-white/60 hover:text-white transition-colors text-sm flex items-center gap-2"><span>{s.countryFlag}</span> {s.country} {s.typeName}</Link></li>
               ))}
               <li><Link to="/hizmetler" className="text-[#c9a84c] hover:text-[#e8c95a] transition-colors text-sm font-medium">Tüm Hizmetler →</Link></li>
             </ul>
@@ -336,6 +336,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/giris" className="text-white/60 hover:text-white transition-colors text-sm">Giriş Yap</Link></li>
               <li><Link to="/kayit" className="text-white/60 hover:text-white transition-colors text-sm">Kayıt Ol</Link></li>
               <li><Link to="/panel" className="text-white/60 hover:text-white transition-colors text-sm">Başvuru Takip</Link></li>
+              <li><Link to="/gizlilik-politikasi" className="text-white/60 hover:text-white transition-colors text-sm">Gizlilik Politikası</Link></li>
             </ul>
           </div>
           <div>
@@ -353,10 +354,11 @@ export const Footer: React.FC = () => {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-white/40 text-sm">© {new Date().getFullYear()} EuroVize Danışmanlık. Tüm hakları saklıdır.</p>
-          <div className="flex items-center gap-6 text-white/40 text-sm">
-            <span className="hover:text-white/60 cursor-pointer transition-colors">Gizlilik Politikası</span>
-            <span className="hover:text-white/60 cursor-pointer transition-colors">Kullanım Koşulları</span>
-            <span className="hover:text-white/60 cursor-pointer transition-colors">KVKK Aydınlatma</span>
+          <div className="flex items-center gap-6 text-white/40 text-sm flex-wrap justify-center">
+            <Link to="/gizlilik-politikasi" className="hover:text-white/60 transition-colors">Gizlilik Politikası</Link>
+            <Link to="/kullanim-kosullari" className="hover:text-white/60 transition-colors">Kullanım Koşulları</Link>
+            <Link to="/kvkk-aydinlatma" className="hover:text-white/60 transition-colors">KVKK Aydınlatma</Link>
+            <Link to="/cerez-politikasi" className="hover:text-white/60 transition-colors">Çerez Politikası</Link>
           </div>
         </div>
       </div>

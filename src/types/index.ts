@@ -1,5 +1,6 @@
 export interface Service {
   id: string;
+  slug?: string;
   title: string;
   description: string;
   longDescription: string;
@@ -43,11 +44,25 @@ export interface Application {
   additionalInfo: string;
 }
 
+export interface PublicTracking {
+  id: string;
+  applicationId: string;
+  userId: string;
+  trackingNumber: string;
+  serviceTitle: string;
+  country: string;
+  status: Application['status'];
+  statusName: string;
+  notes: Application['notes'];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string;
   phone: string;
   role: 'user' | 'admin';
   createdAt: string;

@@ -6,12 +6,4 @@ Disallow: /profil
 Disallow: /giris
 Disallow: /kayit
 
-Sitemap: https://eurovize.com/sitemap.xml
-
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 2
+Sitemap: https://eurovize.vercel.app/sitemap.xml

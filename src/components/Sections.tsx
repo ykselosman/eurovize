@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Star, Users, Globe, Award, Shield, Clock, MapPin, Plane, BookOpen, Heart, Building2, ChevronRight, Phone, MessageCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import type { Application } from '../types';
+import type { PublicTracking } from '../types';
 
 const iconMap: Record<string, React.ReactNode> = {
   tourist: <Plane size={24} />,
@@ -74,7 +74,7 @@ export const HeroSection: React.FC = () => {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 space-y-4">
               <h3 className="text-white font-bold text-lg mb-4">🇪🇺 Popüler Hizmetler</h3>
               {activeServices.map((s) => (
-                <Link key={s.id} to={`/hizmet/${s.id}`} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 hover:bg-white/10 transition-colors">
+                <Link key={s.id} to={`/hizmet/${s.slug || s.id}`} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{s.countryFlag}</span>
                     <div>
@@ -123,7 +123,7 @@ export const ServicesSection: React.FC = () => {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeServices.map(service => (
-            <Link key={service.id} to={`/hizmet/${service.id}`} className="group relative bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl hover:border-[#c9a84c]/30 transition-all duration-300 hover:-translate-y-1">
+            <Link key={service.id} to={`/hizmet/${service.slug || service.id}`} className="group relative bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-xl hover:border-[#c9a84c]/30 transition-all duration-300 hover:-translate-y-1">
               <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#0f2b5b] group-hover:bg-[#0f2b5b] group-hover:text-white transition-colors">
                   {iconMap[service.type] || <Globe size={24} />}
@@ -353,7 +353,7 @@ export const FAQSection: React.FC = () => {
 export const TrackingSection: React.FC = () => {
   const { getApplicationByTracking } = useApp();
   const [trackingNo, setTrackingNo] = useState('');
-  const [result, setResult] = useState<Application | undefined | null>(undefined);
+  const [result, setResult] = useState<PublicTracking | undefined | null>(undefined);
   const [searched, setSearched] = useState(false);
   const [searching, setSearching] = useState(false);
 

@@ -1,25 +1,39 @@
 import { initializeApp } from 'firebase/app';
 import {
-  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signOut, onAuthStateChanged, updatePassword as firebaseAuthUpdatePassword,
-  reauthenticateWithCredential, EmailAuthProvider,
-  GoogleAuthProvider, signInWithPopup
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updatePassword as firebaseAuthUpdatePassword,
 } from 'firebase/auth';
 import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc,
-  updateDoc, deleteDoc, query, where
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  query,
+  setDoc,
+  updateDoc,
+  where,
 } from 'firebase/firestore';
-import type { Service, Testimonial, FAQ, SiteSettings, Application, User } from '../types';
-import { initialServices, initialTestimonials, initialFAQs, initialSettings, defaultAdmin } from '../data/initialData';
+import type { Application, FAQ, PublicTracking, Service, SiteSettings, Testimonial, User } from '../types';
+import { initialFAQs, initialServices, initialSettings, initialTestimonials } from '../data/initialData';
+import { isAdminEmail } from '../utils/site';
 
-/* ─── Init ─── */
 const firebaseConfig = {
-  apiKey: "AIzaSyBZu2rhh2t74DVrSmEMbd-ObMN3k2jEcmE",
-  authDomain: "gen-lang-client-0991913364.firebaseapp.com",
-  projectId: "gen-lang-client-0991913364",
-  storageBucket: "gen-lang-client-0991913364.firebasestorage.app",
-  messagingSenderId: "283825921477",
-  appId: "1:283825921477:web:db908a3ff5f4ff235f3fac"
+  apiKey: 'AIzaSyBZu2rhh2t74DVrSmEMbd-ObMN3k2jEcmE',
+  authDomain: 'gen-lang-client-0991913364.firebaseapp.com',
+  projectId: 'gen-lang-client-0991913364',
+  storageBucket: 'gen-lang-client-0991913364.firebasestorage.app',
+  messagingSenderId: '283825921477',
+  appId: '1:283825921477:web:db908a3ff5f4ff235f3fac',
 };
 
 let firebaseOk = false;
@@ -27,6 +41,7 @@ let auth: ReturnType<typeof getAuth> | null = null;
 let db: ReturnType<typeof getFirestore> | null = null;
 let servicesCol: ReturnType<typeof collection> | null = null;
 let applicationsCol: ReturnType<typeof collection> | null = null;
+let trackingCol: ReturnType<typeof collection> | null = null;
 let testimonialsCol: ReturnType<typeof collection> | null = null;
 let faqsCol: ReturnType<typeof collection> | null = null;
 let usersCol: ReturnType<typeof collection> | null = null;
@@ -38,198 +53,265 @@ try {
   db = getFirestore(app);
   servicesCol = collection(db, 'services');
   applicationsCol = collection(db, 'applications');
+  trackingCol = collection(db, 'tracking');
   testimonialsCol = collection(db, 'testimonials');
   faqsCol = collection(db, 'faqs');
   usersCol = collection(db, 'users');
   settingsDocRef = doc(db, 'settings', 'main');
   firebaseOk = true;
-} catch (e) {
-  console.warn('⚠️ Firebase başlatılamadı:', e);
+} catch (error) {
+  console.warn('⚠️ Firebase başlatılamadı:', error);
 }
 
-export function isFirebaseReady() { return firebaseOk; }
+export function isFirebaseReady() {
+  return firebaseOk;
+}
+
 export { auth };
 
-/* ─── Helpers ─── */
-function timeout<T>(p: Promise<T>, ms = 5000): Promise<T | null> {
-  return Promise.race([p, new Promise<null>(r => setTimeout(() => r(null), ms))]);
+function timeout<T>(promise: Promise<T>, ms = 5000): Promise<T | null> {
+  return Promise.race([promise, new Promise<null>(resolve => setTimeout(() => resolve(null), ms))]);
 }
 
-/* ─── Seed ─── */
+const normalizeUser = (user: Partial<User> & Pick<User, 'id' | 'email'>): User => ({
+  id: user.id,
+  name: user.name || user.email.split('@')[0],
+  email: user.email,
+  phone: user.phone || '',
+  role: isAdminEmail(user.email) ? 'admin' : (user.role === 'admin' ? 'admin' : 'user'),
+  createdAt: user.createdAt || new Date().toISOString(),
+});
+
 export async function seedFirestore(): Promise<void> {
   if (!firebaseOk || !servicesCol || !db) return;
   try {
-    const snap = await timeout(getDocs(servicesCol));
-    if (!snap || !snap.empty) return;
-    const b: Promise<void>[] = [];
-    for (const s of initialServices) b.push(setDoc(doc(db, 'services', s.id), { ...s }));
-    for (const t of initialTestimonials) b.push(setDoc(doc(db, 'testimonials', t.id), { ...t }));
-    for (const f of initialFAQs) b.push(setDoc(doc(db, 'faqs', f.id), { ...f }));
-    b.push(setDoc(doc(db, 'settings', 'main'), { ...initialSettings }));
-    b.push(setDoc(doc(db, 'users', 'admin'), {
-      id: 'admin', name: defaultAdmin.name, email: defaultAdmin.email,
-      password: '', phone: defaultAdmin.phone, role: 'admin', createdAt: defaultAdmin.createdAt
-    }));
-    await Promise.all(b);
-  } catch (e) { console.warn('Seed hatası:', e); }
+    const servicesSnap = await timeout(getDocs(servicesCol));
+    if (!servicesSnap || !servicesSnap.empty) return;
+
+    const writes: Promise<void>[] = [];
+    for (const service of initialServices) writes.push(setDoc(doc(db, 'services', service.id), { ...service }));
+    for (const testimonial of initialTestimonials) writes.push(setDoc(doc(db, 'testimonials', testimonial.id), { ...testimonial }));
+    for (const faq of initialFAQs) writes.push(setDoc(doc(db, 'faqs', faq.id), { ...faq }));
+    writes.push(setDoc(doc(db, 'settings', 'main'), { ...initialSettings }));
+    await Promise.all(writes);
+  } catch (error) {
+    console.warn('Seed hatası:', error);
+  }
 }
 
-/* ─── Fetch ─── */
 export async function fetchAllServices(): Promise<Service[]> {
   if (!firebaseOk || !servicesCol) return [];
   try {
-    const s = await timeout(getDocs(servicesCol));
-    return s ? s.docs.map(d => d.data() as Service) : [];
-  } catch { return []; }
+    const snap = await timeout(getDocs(servicesCol));
+    return snap ? snap.docs.map(d => d.data() as Service) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchAllApplications(): Promise<Application[]> {
   if (!firebaseOk || !applicationsCol) return [];
   try {
-    const s = await timeout(getDocs(applicationsCol));
-    return s ? s.docs.map(d => d.data() as Application) : [];
-  } catch { return []; }
+    const snap = await timeout(getDocs(applicationsCol));
+    return snap ? snap.docs.map(d => d.data() as Application) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchApplicationsByUser(uid: string): Promise<Application[]> {
   if (!firebaseOk || !applicationsCol) return [];
   try {
-    const q = query(applicationsCol, where('userId', '==', uid));
-    const s = await timeout(getDocs(q));
-    return s ? s.docs.map(d => d.data() as Application) : [];
-  } catch { return []; }
+    const snap = await timeout(getDocs(query(applicationsCol, where('userId', '==', uid))));
+    return snap ? snap.docs.map(d => d.data() as Application) : [];
+  } catch {
+    return [];
+  }
 }
 
-export async function fetchApplicationByTracking(tn: string): Promise<Application | null> {
-  if (!firebaseOk || !applicationsCol) return null;
+export async function fetchPublicTrackingByTracking(trackingNumber: string): Promise<PublicTracking | null> {
+  if (!firebaseOk || !trackingCol) return null;
   try {
-    const q = query(applicationsCol, where('trackingNumber', '==', tn.toUpperCase()));
-    const s = await timeout(getDocs(q));
-    return s && !s.empty ? (s.docs[0].data() as Application) : null;
-  } catch { return null; }
+    const snap = await timeout(getDocs(query(trackingCol, where('trackingNumber', '==', trackingNumber.toUpperCase()))));
+    return snap && !snap.empty ? (snap.docs[0].data() as PublicTracking) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchAllTestimonials(): Promise<Testimonial[]> {
   if (!firebaseOk || !testimonialsCol) return [];
   try {
-    const s = await timeout(getDocs(testimonialsCol));
-    return s ? s.docs.map(d => d.data() as Testimonial) : [];
-  } catch { return []; }
+    const snap = await timeout(getDocs(testimonialsCol));
+    return snap ? snap.docs.map(d => d.data() as Testimonial) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchAllFAQs(): Promise<FAQ[]> {
   if (!firebaseOk || !faqsCol) return [];
   try {
-    const s = await timeout(getDocs(faqsCol));
-    return s ? s.docs.map(d => d.data() as FAQ) : [];
-  } catch { return []; }
+    const snap = await timeout(getDocs(faqsCol));
+    return snap ? snap.docs.map(d => d.data() as FAQ) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchSettings(): Promise<Partial<SiteSettings> | null> {
   if (!firebaseOk || !settingsDocRef) return null;
   try {
-    const s = await timeout(getDoc(settingsDocRef));
-    return s && s.exists() ? (s.data() as Partial<SiteSettings>) : null;
-  } catch { return null; }
+    const snap = await timeout(getDoc(settingsDocRef));
+    return snap && snap.exists() ? (snap.data() as Partial<SiteSettings>) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchAllUsers(): Promise<User[]> {
   if (!firebaseOk || !usersCol) return [];
   try {
-    const s = await timeout(getDocs(usersCol));
-    return s ? s.docs.map(d => d.data() as User) : [];
-  } catch { return []; }
+    const snap = await timeout(getDocs(usersCol));
+    return snap ? snap.docs.map(d => normalizeUser(d.data() as User)) : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchUserProfile(uid: string): Promise<User | null> {
   if (!firebaseOk || !db) return null;
   try {
-    const s = await timeout(getDoc(doc(db, 'users', uid)));
-    if (s && s.exists()) return s.data() as User;
-    if (!usersCol) return null;
-    const q = query(usersCol, where('email', '==', auth?.currentUser?.email));
-    const qs = await timeout(getDocs(q));
-    return qs && !qs.empty ? (qs.docs[0].data() as User) : null;
-  } catch { return null; }
+    const direct = await timeout(getDoc(doc(db, 'users', uid)));
+    if (direct && direct.exists()) return normalizeUser(direct.data() as User);
+
+    if (!usersCol || !auth?.currentUser?.email) {
+      return auth?.currentUser?.email
+        ? normalizeUser({ id: uid, email: auth.currentUser.email, name: auth.currentUser.displayName || undefined })
+        : null;
+    }
+
+    const fallback = await timeout(getDocs(query(usersCol, where('email', '==', auth.currentUser.email))));
+    return fallback && !fallback.empty ? normalizeUser(fallback.docs[0].data() as User) : normalizeUser({
+      id: uid,
+      email: auth.currentUser.email,
+      name: auth.currentUser.displayName || undefined,
+    });
+  } catch {
+    return auth?.currentUser?.email
+      ? normalizeUser({ id: uid, email: auth.currentUser.email, name: auth.currentUser.displayName || undefined })
+      : null;
+  }
 }
 
-/* ─── Auth ─── */
-export async function firebaseLogin(email: string, pw: string): Promise<User | null> {
+export async function firebaseLogin(email: string, password: string): Promise<User | null> {
   if (!firebaseOk || !auth) return null;
   try {
-    const c = await signInWithEmailAndPassword(auth, email, pw);
-    const p = await fetchUserProfile(c.user.uid);
-    return p ?? {
-      id: c.user.uid, name: c.user.displayName || email.split('@')[0],
-      email: c.user.email || email, password: '', phone: '',
-      role: email === defaultAdmin.email ? 'admin' : 'user',
-      createdAt: new Date().toISOString()
-    };
-  } catch { return null; }
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const profile = await fetchUserProfile(credential.user.uid);
+    return profile ?? normalizeUser({
+      id: credential.user.uid,
+      email: credential.user.email || email,
+      name: credential.user.displayName || email.split('@')[0],
+    });
+  } catch {
+    return null;
+  }
 }
 
-export async function firebaseRegister(name: string, email: string, pw: string, phone: string): Promise<User> {
-  if (!firebaseOk || !auth || !db) throw new Error('Firebase yok');
-  const c = await createUserWithEmailAndPassword(auth, email, pw);
-  const u: User = { id: c.user.uid, name, email, password: '', phone, role: 'user', createdAt: new Date().toISOString() };
-  await setDoc(doc(db, 'users', c.user.uid), u);
-  return u;
+export async function firebaseRegister(name: string, email: string, password: string, phone: string): Promise<User> {
+  if (!firebaseOk || !auth || !db) throw new Error('Firebase kullanılamıyor');
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = normalizeUser({
+    id: credential.user.uid,
+    name,
+    email: credential.user.email || email,
+    phone,
+    role: isAdminEmail(email) ? 'admin' : 'user',
+    createdAt: new Date().toISOString(),
+  });
+  await setDoc(doc(db, 'users', credential.user.uid), user);
+  return user;
 }
 
 export async function firebaseGoogleLogin(): Promise<User> {
-  if (!firebaseOk || !auth || !db) throw new Error('Firebase yok');
-  const c = await signInWithPopup(auth, new GoogleAuthProvider());
-  let p = await fetchUserProfile(c.user.uid);
-  if (!p) {
-    p = { id: c.user.uid, name: c.user.displayName || c.user.email?.split('@')[0] || 'Kullanıcı', email: c.user.email || '', password: '', phone: '', role: 'user', createdAt: new Date().toISOString() };
-    await setDoc(doc(db, 'users', c.user.uid), p);
+  if (!firebaseOk || !auth || !db) throw new Error('Firebase kullanılamıyor');
+  const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+  let profile = await fetchUserProfile(credential.user.uid);
+  if (!profile) {
+    profile = normalizeUser({
+      id: credential.user.uid,
+      email: credential.user.email || '',
+      name: credential.user.displayName || undefined,
+      createdAt: new Date().toISOString(),
+    });
+    await setDoc(doc(db, 'users', credential.user.uid), profile);
   }
-  return p;
+  return profile;
 }
 
 export async function firebaseLogout(): Promise<void> {
   if (auth) await signOut(auth);
 }
 
-export function setupAuthListener(cb: (u: any) => void): () => void {
-  if (!firebaseOk || !auth) { cb(null); return () => {}; }
+export function setupAuthListener(cb: (user: any) => void): () => void {
+  if (!firebaseOk || !auth) {
+    cb(null);
+    return () => {};
+  }
   return onAuthStateChanged(auth, cb);
 }
 
-export async function firebaseUpdatePassword(oldP: string, newP: string): Promise<boolean> {
+export async function firebaseUpdatePassword(oldPassword: string, newPassword: string): Promise<boolean> {
   if (!auth?.currentUser?.email) return false;
   try {
-    await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, oldP));
-    await firebaseAuthUpdatePassword(auth.currentUser, newP);
+    await reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, oldPassword));
+    await firebaseAuthUpdatePassword(auth.currentUser, newPassword);
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
-/* ─── CRUD ─── */
-async function w(collection: string, id: string, data: any) {
+async function setDocument(collectionName: string, id: string, data: unknown) {
   if (!firebaseOk || !db) return;
-  try { await setDoc(doc(db, collection, id), data); } catch {}
-}
-async function u(collection: string, id: string, data: any) {
-  if (!firebaseOk || !db) return;
-  try { await updateDoc(doc(db, collection, id), data); } catch {}
-}
-async function d(collection: string, id: string) {
-  if (!firebaseOk || !db) return;
-  try { await deleteDoc(doc(db, collection, id)); } catch {}
+  try {
+    await setDoc(doc(db, collectionName, id), data as never);
+  } catch {}
 }
 
-export const addServiceToDb = (s: Service) => w('services', s.id, { ...s });
-export const updateServiceInDb = (id: string, data: any) => u('services', id, data);
-export const deleteServiceFromDb = (id: string) => d('services', id);
-export const addApplicationToDb = (a: Application) => w('applications', a.id, { ...a });
-export const updateApplicationInDb = (id: string, data: any) => u('applications', id, data);
-export const deleteApplicationFromDb = (id: string) => d('applications', id);
-export const addTestimonialToDb = (t: Testimonial) => w('testimonials', t.id, { ...t });
-export const updateTestimonialInDb = (id: string, data: any) => u('testimonials', id, data);
-export const deleteTestimonialFromDb = (id: string) => d('testimonials', id);
-export const addFAQToDb = (f: FAQ) => w('faqs', f.id, { ...f });
-export const updateFAQInDb = (id: string, data: any) => u('faqs', id, data);
-export const deleteFAQFromDb = (id: string) => d('faqs', id);
-export const updateSettingsInDb = (data: any) => u('settings', 'main', data);
-export const updateUserInDb = (id: string, data: any) => u('users', id, data);
+async function updateDocument(collectionName: string, id: string, data: unknown) {
+  if (!firebaseOk || !db) return;
+  try {
+    await updateDoc(doc(db, collectionName, id), data as never);
+  } catch {}
+}
+
+async function deleteDocument(collectionName: string, id: string) {
+  if (!firebaseOk || !db) return;
+  try {
+    await deleteDoc(doc(db, collectionName, id));
+  } catch {}
+}
+
+export const addServiceToDb = (service: Service) => setDocument('services', service.id, { ...service });
+export const updateServiceInDb = (id: string, data: Partial<Service>) => updateDocument('services', id, data);
+export const deleteServiceFromDb = (id: string) => deleteDocument('services', id);
+
+export const addApplicationToDb = (application: Application) => setDocument('applications', application.id, { ...application });
+export const updateApplicationInDb = (id: string, data: Partial<Application>) => updateDocument('applications', id, data);
+export const deleteApplicationFromDb = (id: string) => deleteDocument('applications', id);
+
+export const upsertTrackingInDb = (tracking: PublicTracking) => setDocument('tracking', tracking.id, { ...tracking });
+export const deleteTrackingFromDb = (id: string) => deleteDocument('tracking', id);
+
+export const addTestimonialToDb = (testimonial: Testimonial) => setDocument('testimonials', testimonial.id, { ...testimonial });
+export const updateTestimonialInDb = (id: string, data: Partial<Testimonial>) => updateDocument('testimonials', id, data);
+export const deleteTestimonialFromDb = (id: string) => deleteDocument('testimonials', id);
+
+export const addFAQToDb = (faq: FAQ) => setDocument('faqs', faq.id, { ...faq });
+export const updateFAQInDb = (id: string, data: Partial<FAQ>) => updateDocument('faqs', id, data);
+export const deleteFAQFromDb = (id: string) => deleteDocument('faqs', id);
+
+export const updateSettingsInDb = (data: Partial<SiteSettings>) => updateDocument('settings', 'main', data);
+export const updateUserInDb = (id: string, data: Partial<User>) => updateDocument('users', id, data);

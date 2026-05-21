@@ -1,50 +1,151 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Public read access
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthed()
+        && request.auth.token.email is string
+        && request.auth.token.email.matches('(?i)^admin@eurovize\\.com$');
+    }
+
+    function isSelf(uid) {
+      return isAuthed() && request.auth.uid == uid;
+    }
+
+    function validUserCreate(uid) {
+      return request.resource.data.keys().hasOnly(['id', 'name', 'email', 'phone', 'role', 'createdAt'])
+        && request.resource.data.id == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 30
+        && request.resource.data.createdAt is string
+        && request.resource.data.role == (isAdmin() ? 'admin' : 'user');
+    }
+
+    function validUserSelfUpdate() {
+      return request.resource.data.keys().hasOnly(['id', 'name', 'email', 'phone', 'role', 'createdAt'])
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 30;
+    }
+
+    function validApplicationCreate() {
+      return request.resource.data.keys().hasOnly([
+          'id', 'userId', 'userName', 'userEmail', 'userPhone', 'serviceId', 'serviceTitle',
+          'country', 'trackingNumber', 'status', 'statusName', 'notes', 'documents',
+          'createdAt', 'updatedAt', 'personalInfo', 'additionalInfo'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.userEmail == request.auth.token.email
+        && request.resource.data.userName is string
+        && request.resource.data.userName.size() > 1
+        && request.resource.data.userName.size() <= 120
+        && request.resource.data.userPhone is string
+        && request.resource.data.userPhone.size() <= 30
+        && request.resource.data.serviceId is string
+        && request.resource.data.serviceTitle is string
+        && request.resource.data.serviceTitle.size() > 1
+        && request.resource.data.serviceTitle.size() <= 200
+        && request.resource.data.country is string
+        && request.resource.data.country.size() > 1
+        && request.resource.data.country.size() <= 80
+        && request.resource.data.trackingNumber is string
+        && request.resource.data.trackingNumber.matches('^EV-[A-Z0-9-]{8,32}$')
+        && request.resource.data.status == 'pending'
+        && request.resource.data.statusName == 'Beklemede'
+        && request.resource.data.notes is list
+        && request.resource.data.notes.size() == 1
+        && request.resource.data.documents is list
+        && request.resource.data.documents.size() <= 40
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string
+        && request.resource.data.personalInfo is map
+        && request.resource.data.personalInfo.firstName is string
+        && request.resource.data.personalInfo.firstName.size() > 0
+        && request.resource.data.personalInfo.firstName.size() <= 80
+        && request.resource.data.personalInfo.lastName is string
+        && request.resource.data.personalInfo.lastName.size() > 0
+        && request.resource.data.personalInfo.lastName.size() <= 80
+        && request.resource.data.personalInfo.birthDate is string
+        && request.resource.data.personalInfo.nationality is string
+        && request.resource.data.personalInfo.nationality.size() <= 80
+        && request.resource.data.personalInfo.passportNumber is string
+        && request.resource.data.personalInfo.passportNumber.size() <= 20
+        && request.resource.data.personalInfo.address is string
+        && request.resource.data.personalInfo.address.size() <= 300
+        && request.resource.data.additionalInfo is string
+        && request.resource.data.additionalInfo.size() <= 3000;
+    }
+
+    function validTrackingCreate() {
+      return request.resource.data.keys().hasOnly([
+          'id', 'applicationId', 'userId', 'trackingNumber', 'serviceTitle',
+          'country', 'status', 'statusName', 'notes', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.statusName == 'Beklemede'
+        && request.resource.data.trackingNumber is string
+        && request.resource.data.trackingNumber.matches('^EV-[A-Z0-9-]{8,32}$')
+        && request.resource.data.notes is list
+        && request.resource.data.notes.size() == 1
+        && request.resource.data.serviceTitle is string
+        && request.resource.data.serviceTitle.size() > 1
+        && request.resource.data.serviceTitle.size() <= 200
+        && request.resource.data.country is string
+        && request.resource.data.country.size() > 1
+        && request.resource.data.country.size() <= 80;
+    }
+
     match /services/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
+
     match /testimonials/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
+
     match /faqs/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
+
     match /settings/{id} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Auth-protected
-    match /applications/{id} {
-      allow read: if isAdmin() || isOwner();
-      allow create: if isAuthed();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-    match /users/{id} {
-      allow read: if isAuthed();
-      allow create: if isAuthed();
-      allow update: if isOwner() || isAdmin();
-      allow delete: if isAdmin();
+    match /tracking/{id} {
+      allow read: if true;
+      allow create: if isAuthed() && validTrackingCreate();
+      allow update, delete: if isAdmin();
     }
 
-    function isAuthed() {
-      return request.auth != null;
+    match /applications/{id} {
+      allow read: if isAdmin() || (isAuthed() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthed() && validApplicationCreate();
+      allow update, delete: if isAdmin();
     }
-    function isAdmin() {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    function isOwner() {
-      return request.auth != null &&
-        resource != null &&
-        resource.data.userId == request.auth.uid;
+
+    match /users/{id} {
+      allow read: if isAdmin() || isSelf(id);
+      allow create: if isSelf(id) && validUserCreate(id);
+      allow update: if isAdmin() || (isSelf(id) && validUserSelfUpdate());
+      allow delete: if isAdmin();
     }
   }
 }
