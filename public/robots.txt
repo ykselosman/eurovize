@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /panel
+Disallow: /profil
+Disallow: /giris
+Disallow: /kayit
+
+Sitemap: https://eurovize.vercel.app/sitemap.xml
