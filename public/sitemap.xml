@@ -1,23 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://eurovize.vercel.app/</loc><lastmod>2026-05-21</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmetler</loc><lastmod>2026-05-21</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://eurovize.vercel.app/hakkimizda</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://eurovize.vercel.app/iletisim</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/gizlilik-politikasi</loc><lastmod>2026-05-21</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://eurovize.vercel.app/kullanim-kosullari</loc><lastmod>2026-05-21</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://eurovize.vercel.app/cerez-politikasi</loc><lastmod>2026-05-21</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://eurovize.vercel.app/kvkk-aydinlatma</loc><lastmod>2026-05-21</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/almanya-calisma-vizesi-danismanligi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/hollanda-yuksek-nitelikli-gocmen-vizesi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/fransa-ogrenci-vizesi-danismanligi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/ispanya-altin-vize-golden-visa-programi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/belcika-aile-birlesimi-vizesi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/portekiz-d7-pasif-gelir-vizesi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/italya-elektrikci-vizesi-decreto-flussi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/avusturya-kirmizi-beyaz-kirmizi-karti</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/isvec-calisma-vizesi-danismanligi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/schengen-bolgesi-schengen-turistik-vize-danismanligi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/danimarka-pozitif-liste-calisma-vizesi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://eurovize.vercel.app/hizmet/norvec-uzman-calisma-vizesi</loc><lastmod>2026-05-21</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/</loc><lastmod>2026-05-23</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmetler</loc><lastmod>2026-05-23</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://eurovize.vercel.app/blog</loc><lastmod>2026-05-23</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hakkimizda</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/iletisim</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/gizlilik-politikasi</loc><lastmod>2026-05-23</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://eurovize.vercel.app/kullanim-kosullari</loc><lastmod>2026-05-23</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://eurovize.vercel.app/cerez-politikasi</loc><lastmod>2026-05-23</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://eurovize.vercel.app/kvkk-aydinlatma</loc><lastmod>2026-05-23</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+
+  <url><loc>https://eurovize.vercel.app/hizmet/almanya-calisma-vizesi-danismanligi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/hollanda-yuksek-nitelikli-gocmen-vizesi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/fransa-ogrenci-vizesi-danismanligi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/ispanya-altin-vize-golden-visa-programi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/belcika-aile-birlesimi-vizesi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/portekiz-d7-pasif-gelir-vizesi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/italya-elektrikci-vizesi-decreto-flussi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/avusturya-kirmizi-beyaz-kirmizi-karti</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/isvec-calisma-vizesi-danismanligi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/schengen-bolgesi-schengen-turistik-vize-danismanligi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/danimarka-pozitif-liste-calisma-vizesi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/hizmet/norvec-uzman-calisma-vizesi</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <url><loc>https://eurovize.vercel.app/blog/almanya-calisma-vizesi-nasil-alinir</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/blog/hollanda-yuksek-nitelikli-gocmen-sartlari</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/blog/portekiz-d7-vizesi-kimler-icin-uygun</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/blog/schengen-vizesi-reddi-sonrasi-ne-yapilmali</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/blog/fransa-ogrenci-vizesi-icin-gerekli-belgeler</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://eurovize.vercel.app/blog/avrupada-oturum-almak-icin-en-avantajli-ulkeler</loc><lastmod>2026-05-23</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>

@@ -87,6 +87,34 @@ export interface FAQ {
   isActive: boolean;
 }
 
+export interface BlogPostSection {
+  heading: string;
+  paragraphs: string[];
+  bullets?: string[];
+}
+
+export interface BlogPostFAQ {
+  question: string;
+  answer: string;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  description: string;
+  keywords: string;
+  category: string;
+  publishedAt: string;
+  updatedAt: string;
+  readingTime: string;
+  author: string;
+  relatedServiceIds: string[];
+  sections: BlogPostSection[];
+  faqs: BlogPostFAQ[];
+}
+
 export interface TeamMember {
   id: string;
   name: string;

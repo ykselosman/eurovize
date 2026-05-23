@@ -109,6 +109,7 @@ export const Header: React.FC = () => {
     { to: '/', label: 'Ana Sayfa' },
     { to: '/hizmetler', label: 'Hizmetler' },
     { to: '/hakkimizda', label: 'Hakkımızda' },
+    { to: '/blog', label: 'Blog' },
     { to: '/iletisim', label: 'İletişim' },
   ];
 
@@ -333,6 +334,7 @@ export const Footer: React.FC = () => {
               <li><Link to="/" className="text-white/60 hover:text-white transition-colors text-sm">Ana Sayfa</Link></li>
               <li><Link to="/hakkimizda" className="text-white/60 hover:text-white transition-colors text-sm">Hakkımızda</Link></li>
               <li><Link to="/iletisim" className="text-white/60 hover:text-white transition-colors text-sm">İletişim</Link></li>
+              <li><Link to="/blog" className="text-white/60 hover:text-white transition-colors text-sm">Blog</Link></li>
               <li><Link to="/giris" className="text-white/60 hover:text-white transition-colors text-sm">Giriş Yap</Link></li>
               <li><Link to="/kayit" className="text-white/60 hover:text-white transition-colors text-sm">Kayıt Ol</Link></li>
               <li><Link to="/panel" className="text-white/60 hover:text-white transition-colors text-sm">Başvuru Takip</Link></li>

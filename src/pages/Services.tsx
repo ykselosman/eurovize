@@ -2,9 +2,57 @@ import React, { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, ChevronRight, Clock, MessageCircle, Phone, Search, Star } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { blogPosts } from '../data/blogPosts';
 import { typeColors } from '../data/initialData';
 import { Breadcrumb, SEO, seoServiceDetail, seoServices } from '../components/SEO';
 import { DEFAULT_OG_IMAGE, pageUrl } from '../utils/site';
+import type { Service } from '../types';
+
+const typeIntroMap: Record<Service['type'], string> = {
+  work: 'Bu hizmet, Avrupa’da bir iş teklifi almış veya nitelikli çalışan olarak yurt dışında kariyer hedefleyen adaylar için uygundur.',
+  student: 'Bu hizmet, Avrupa’da eğitim planlayan ve öğrenci vizesi sürecini eksiksiz yönetmek isteyen adaylara yöneliktir.',
+  family: 'Bu hizmet, eş veya aile bireyleriyle Avrupa’da birlikte yaşamak için aile birleşimi başvurusu yapacak kişiler için hazırlanmıştır.',
+  residence: 'Bu hizmet, belirli gelir veya yaşam planı üzerinden Avrupa’da yasal oturum hakkı elde etmek isteyen adaylara hitap eder.',
+  tourist: 'Bu hizmet, Schengen veya kısa süreli seyahat amacıyla Avrupa’ya gitmek isteyen kişiler için dosya hazırlığı sağlar.',
+  golden: 'Bu hizmet, yatırım yoluyla Avrupa’da oturum hakkı elde etmek isteyen yatırımcılara yöneliktir.',
+  citizenship: 'Bu hizmet, uzun vadeli oturum ve vatandaşlık yolunda stratejik planlama yapmak isteyen adaylara uygundur.',
+  business: 'Bu hizmet, iş kurma, ticari faaliyet veya şirket temelli vize süreçleriyle Avrupa’ya açılmak isteyen başvuru sahiplerine yöneliktir.',
+};
+
+const typeFaqMap: Record<Service['type'], { question: string; answer: string }[]> = {
+  work: [
+    { question: 'İş teklifi olmadan çalışma vizesi alınabilir mi?', answer: 'Birçok Avrupa ülkesinde çalışma vizesi için iş teklifi veya iş sözleşmesi temel gerekliliktir. Ülkeye göre farklı programlar bulunabilir.' },
+    { question: 'Çalışma vizesi sonrası oturum alınır mı?', answer: 'Evet. Çoğu ülkede çalışma vizesi veya buna bağlı süreç, geçici/uzun süreli oturum hakkına dönüşür.' },
+  ],
+  student: [
+    { question: 'Öğrenci vizesi için kabul mektubu zorunlu mu?', answer: 'Evet, neredeyse tüm öğrenci vizesi dosyalarında okul veya üniversite kabulü temel evraklardan biridir.' },
+    { question: 'Öğrenci vizesi ile part-time çalışma mümkün mü?', answer: 'Ülkeye göre değişmekle birlikte çoğu Avrupa ülkesinde belirli saat sınırları içinde çalışma hakkı bulunur.' },
+  ],
+  family: [
+    { question: 'Aile birleşiminde sponsorun geliri önemli mi?', answer: 'Evet. Sponsor kişinin gelir, konut ve yasal statü şartlarını karşılaması başvurunun en kritik unsurlarındandır.' },
+    { question: 'Aile birleşimi ne kadar sürer?', answer: 'Dosyanın ülkeye ve aile yapısına göre değişmesine rağmen birkaç aydan daha uzun süren incelemeler görülebilir.' },
+  ],
+  residence: [
+    { question: 'Oturum izni için ülkede fiziksel bulunma şartı var mı?', answer: 'Programa göre değişir. Bazı programlarda minimum kalış süresi veya kayıt zorunluluğu bulunur.' },
+    { question: 'Oturum izni vatandaşlığa gider mi?', answer: 'Birçok ülkede uzun vadeli yasal ikamet sonrası kalıcı oturum veya vatandaşlık yolu açılabilir.' },
+  ],
+  tourist: [
+    { question: 'Turistik vize ile çalışma yapılabilir mi?', answer: 'Hayır. Turistik vize sadece kısa süreli seyahat ve ziyaret amacıyla kullanılmalıdır.' },
+    { question: 'Ret sonrası tekrar başvuru yapılabilir mi?', answer: 'Evet, ancak ret nedenini düzeltmeden yeniden başvuru yapmak başarı ihtimalini düşürür.' },
+  ],
+  golden: [
+    { question: 'Golden Visa’da yatırım türü önemli mi?', answer: 'Evet. Uygun yatırım modeli ve tutar, ülkenin güncel program kurallarına tam uyumlu olmalıdır.' },
+    { question: 'Aile bireyleri başvuruya dahil edilebilir mi?', answer: 'Birçok golden visa programında eş ve çocuklar da aynı dosyaya dahil edilebilir.' },
+  ],
+  citizenship: [
+    { question: 'Vatandaşlık başvurusu için önce oturum gerekir mi?', answer: 'Çoğu ülkede evet. Vatandaşlık, genellikle belirli bir süre yasal ikametten sonra mümkündür.' },
+    { question: 'Dil şartı olur mu?', answer: 'Birçok ülkede vatandaşlık aşamasında temel dil ve entegrasyon şartları görülebilir.' },
+  ],
+  business: [
+    { question: 'Şirket kurmak tek başına vize almak için yeterli midir?', answer: 'Hayır. Ticari planın gerçekçi olması, finansal yapı ve iş modelinin başvuruya uygun olması gerekir.' },
+    { question: 'İş planı gerekli mi?', answer: 'Evet. Birçok iş kurma ve girişimcilik dosyasında detaylı iş planı kritik rol oynar.' },
+  ],
+};
 
 export const ServicesPage: React.FC = () => {
   const { services } = useApp();
@@ -157,6 +205,30 @@ export const ServiceDetailPage: React.FC = () => {
     .filter(item => item.isActive && item.id !== service.id && (item.type === service.type || item.country === service.country))
     .slice(0, 3);
 
+  const relatedPosts = blogPosts.filter(post => post.relatedServiceIds.includes(service.id) || post.title.toLocaleLowerCase('tr-TR').includes(service.country.toLocaleLowerCase('tr-TR'))).slice(0, 3);
+
+  const serviceFaqs = [
+    {
+      question: `${service.country} için ${service.typeName.toLowerCase()} başvurusu ne kadar sürer?`,
+      answer: `${service.country} için bu başvuru tipi ortalama ${service.duration} içinde sonuçlanabilir. Resmi kurum yoğunluğu ve dosya kalitesi süreyi etkileyebilir.`,
+    },
+    {
+      question: `${service.title} için en önemli evraklar nelerdir?`,
+      answer: `Geçerli pasaport, başvuru formu ve başvuru türüne uygun ana destekleyici evraklar kritik öneme sahiptir. Bu hizmet özelinde temel belgeler yukarıda listelenmiştir.`,
+    },
+    ...typeFaqMap[service.type],
+  ];
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: serviceFaqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
+  };
+
   const schema = [
     {
       '@context': 'https://schema.org',
@@ -178,6 +250,7 @@ export const ServiceDetailPage: React.FC = () => {
         { '@type': 'ListItem', position: 3, name: service.title, item: pageUrl(`/hizmet/${service.slug || service.id}`) },
       ],
     },
+    faqSchema,
   ];
 
   return (
@@ -220,6 +293,12 @@ export const ServiceDetailPage: React.FC = () => {
                 <p className="text-gray-700 leading-relaxed">{service.longDescription}</p>
               </div>
 
+              <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+                <h2 className="text-2xl font-extrabold text-[#0f2b5b] mb-4">Kimler İçin Uygun?</h2>
+                <p className="text-gray-700 leading-8">{typeIntroMap[service.type]}</p>
+                <p className="text-gray-700 leading-8 mt-4">{service.country} için bu süreçte başarı şansını artırmak adına başvuru niyetinizin net, belgelerinizin tutarlı ve zaman planınızın gerçekçi olması gerekir.</p>
+              </div>
+
               <div>
                 <h2 className="text-2xl font-extrabold text-[#0f2b5b] mb-6">Başvuru Süreci</h2>
                 <div className="space-y-4">
@@ -254,6 +333,33 @@ export const ServiceDetailPage: React.FC = () => {
                     <span key={index} className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-[#0f2b5b] rounded-xl text-sm font-medium">
                       <CheckCircle size={16} className="text-[#c9a84c]" /> {feature}
                     </span>
+                  ))}
+                </div>
+              </div>
+
+              {relatedPosts.length > 0 && (
+                <div>
+                  <h2 className="text-2xl font-extrabold text-[#0f2b5b] mb-6">İlgili Rehber Yazılar</h2>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {relatedPosts.map(post => (
+                      <Link key={post.id} to={`/blog/${post.slug}`} className="group bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg hover:border-[#c9a84c]/30 transition-all">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#c9a84c]">{post.category}</span>
+                        <h3 className="mt-2 font-semibold text-[#0f2b5b] text-sm mb-2 group-hover:text-[#c9a84c] transition-colors">{post.title}</h3>
+                        <p className="text-xs text-gray-500 line-clamp-3">{post.excerpt}</p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h2 className="text-2xl font-extrabold text-[#0f2b5b] mb-6">Sık Sorulan Sorular</h2>
+                <div className="space-y-3">
+                  {serviceFaqs.map(faq => (
+                    <div key={faq.question} className="rounded-2xl border border-gray-100 p-5 bg-gray-50">
+                      <h3 className="font-bold text-[#0f2b5b] mb-2">{faq.question}</h3>
+                      <p className="text-sm leading-7 text-gray-600">{faq.answer}</p>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -302,6 +408,11 @@ export const ServiceDetailPage: React.FC = () => {
                   <div className="flex items-center gap-2 text-sm"><span className="text-[#c9a84c]"><CheckCircle size={16} /></span><span className="text-white/80">{settings.stats.totalApplications} Başarılı Başvuru</span></div>
                   <div className="flex items-center gap-2 text-sm"><span className="text-[#c9a84c]"><Clock size={16} /></span><span className="text-white/80">{settings.stats.supportHours} Destek</span></div>
                 </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                <h3 className="font-bold text-[#0f2b5b] text-lg mb-3">Yerel ve Online Danışmanlık</h3>
+                <p className="text-sm text-gray-600 leading-7">İstanbul merkezli danışmanlık altyapımızla Türkiye geneline ve yurt dışından başvuru yapan adaylara online destek sunuyoruz. Bu sayede hem yerel aramalarda hem de ülke bazlı hizmet aramalarında görünürlüğümüz güçlenir.</p>
               </div>
             </div>
           </div>

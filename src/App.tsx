@@ -6,6 +6,8 @@ import { Footer, Header, KVKKBanner, ToastContainer, WhatsAppButton } from './co
 const Home = lazy(() => import('./pages/Home'));
 const ServicesPage = lazy(() => import('./pages/Services').then(module => ({ default: module.ServicesPage })));
 const ServiceDetailPage = lazy(() => import('./pages/Services').then(module => ({ default: module.ServiceDetailPage })));
+const BlogPage = lazy(() => import('./pages/Blog').then(module => ({ default: module.BlogPage })));
+const BlogDetailPage = lazy(() => import('./pages/Blog').then(module => ({ default: module.BlogDetailPage })));
 const AboutPage = lazy(() => import('./pages/About').then(module => ({ default: module.AboutPage })));
 const ContactPage = lazy(() => import('./pages/About').then(module => ({ default: module.ContactPage })));
 const LoginPage = lazy(() => import('./pages/About').then(module => ({ default: module.LoginPage })));
@@ -81,6 +83,8 @@ const AppLayout: React.FC = () => {
           <Route path="/hizmetler" element={<PageLoader><ServicesPage /></PageLoader>} />
           <Route path="/hizmet/:slug" element={<PageLoader><ServiceDetailPage /></PageLoader>} />
           <Route path="/hizmet/id/:id" element={<PageLoader><ServiceDetailPage /></PageLoader>} />
+          <Route path="/blog" element={<PageLoader><BlogPage /></PageLoader>} />
+          <Route path="/blog/:slug" element={<PageLoader><BlogDetailPage /></PageLoader>} />
           <Route path="/hakkimizda" element={<PageLoader><AboutPage /></PageLoader>} />
           <Route path="/iletisim" element={<PageLoader><ContactPage /></PageLoader>} />
           <Route path="/giris" element={<PageLoader><LoginPage /></PageLoader>} />
