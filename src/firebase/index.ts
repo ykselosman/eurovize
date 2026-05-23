@@ -8,6 +8,7 @@ import {
   reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   updatePassword as firebaseAuthUpdatePassword,
 } from 'firebase/auth';
@@ -23,7 +24,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import type { Application, FAQ, PublicTracking, Service, SiteSettings, Testimonial, User } from '../types';
+import type { Application, ContactMessage, FAQ, PublicTracking, Service, SiteSettings, Testimonial, User } from '../types';
 import { initialFAQs, initialServices, initialSettings, initialTestimonials } from '../data/initialData';
 import { isAdminEmail } from '../utils/site';
 
@@ -45,6 +46,7 @@ let trackingCol: ReturnType<typeof collection> | null = null;
 let testimonialsCol: ReturnType<typeof collection> | null = null;
 let faqsCol: ReturnType<typeof collection> | null = null;
 let usersCol: ReturnType<typeof collection> | null = null;
+let contactMessagesCol: ReturnType<typeof collection> | null = null;
 let settingsDocRef: ReturnType<typeof doc> | null = null;
 
 try {
@@ -57,6 +59,7 @@ try {
   testimonialsCol = collection(db, 'testimonials');
   faqsCol = collection(db, 'faqs');
   usersCol = collection(db, 'users');
+  contactMessagesCol = collection(db, 'contactMessages');
   settingsDocRef = doc(db, 'settings', 'main');
   firebaseOk = true;
 } catch (error) {
@@ -69,7 +72,7 @@ export function isFirebaseReady() {
 
 export { auth };
 
-function timeout<T>(promise: Promise<T>, ms = 5000): Promise<T | null> {
+function timeout<T>(promise: Promise<T>, ms = 6000): Promise<T | null> {
   return Promise.race([promise, new Promise<null>(resolve => setTimeout(() => resolve(null), ms))]);
 }
 
@@ -78,7 +81,7 @@ const normalizeUser = (user: Partial<User> & Pick<User, 'id' | 'email'>): User =
   name: user.name || user.email.split('@')[0],
   email: user.email,
   phone: user.phone || '',
-  role: isAdminEmail(user.email) ? 'admin' : (user.role === 'admin' ? 'admin' : 'user'),
+  role: isAdminEmail(user.email) ? 'admin' : user.role === 'admin' ? 'admin' : 'user',
   createdAt: user.createdAt || new Date().toISOString(),
 });
 
@@ -179,6 +182,16 @@ export async function fetchAllUsers(): Promise<User[]> {
   }
 }
 
+export async function fetchAllContactMessages(): Promise<ContactMessage[]> {
+  if (!firebaseOk || !contactMessagesCol) return [];
+  try {
+    const snap = await timeout(getDocs(contactMessagesCol));
+    return snap ? snap.docs.map(d => d.data() as ContactMessage) : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchUserProfile(uid: string): Promise<User | null> {
   if (!firebaseOk || !db) return null;
   try {
@@ -192,11 +205,9 @@ export async function fetchUserProfile(uid: string): Promise<User | null> {
     }
 
     const fallback = await timeout(getDocs(query(usersCol, where('email', '==', auth.currentUser.email))));
-    return fallback && !fallback.empty ? normalizeUser(fallback.docs[0].data() as User) : normalizeUser({
-      id: uid,
-      email: auth.currentUser.email,
-      name: auth.currentUser.displayName || undefined,
-    });
+    return fallback && !fallback.empty
+      ? normalizeUser(fallback.docs[0].data() as User)
+      : normalizeUser({ id: uid, email: auth.currentUser.email, name: auth.currentUser.displayName || undefined });
   } catch {
     return auth?.currentUser?.email
       ? normalizeUser({ id: uid, email: auth.currentUser.email, name: auth.currentUser.displayName || undefined })
@@ -234,20 +245,33 @@ export async function firebaseRegister(name: string, email: string, password: st
   return user;
 }
 
-export async function firebaseGoogleLogin(): Promise<User> {
+export async function firebaseGoogleLogin(): Promise<User | 'redirect' | null> {
   if (!firebaseOk || !auth || !db) throw new Error('Firebase kullanılamıyor');
-  const credential = await signInWithPopup(auth, new GoogleAuthProvider());
-  let profile = await fetchUserProfile(credential.user.uid);
-  if (!profile) {
-    profile = normalizeUser({
-      id: credential.user.uid,
-      email: credential.user.email || '',
-      name: credential.user.displayName || undefined,
-      createdAt: new Date().toISOString(),
-    });
-    await setDoc(doc(db, 'users', credential.user.uid), profile);
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  try {
+    const credential = await signInWithPopup(auth, provider);
+    let profile = await fetchUserProfile(credential.user.uid);
+    if (!profile) {
+      profile = normalizeUser({
+        id: credential.user.uid,
+        email: credential.user.email || '',
+        name: credential.user.displayName || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      await setDoc(doc(db, 'users', credential.user.uid), profile);
+    }
+    return profile;
+  } catch (error: any) {
+    const code = error?.code || '';
+    if (['auth/popup-blocked', 'auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/operation-not-supported-in-this-environment'].includes(code)) {
+      await signInWithRedirect(auth, provider);
+      return 'redirect';
+    }
+    console.warn('Google giriş hatası:', error);
+    return null;
   }
-  return profile;
 }
 
 export async function firebaseLogout(): Promise<void> {
@@ -313,5 +337,10 @@ export const addFAQToDb = (faq: FAQ) => setDocument('faqs', faq.id, { ...faq });
 export const updateFAQInDb = (id: string, data: Partial<FAQ>) => updateDocument('faqs', id, data);
 export const deleteFAQFromDb = (id: string) => deleteDocument('faqs', id);
 
+export const addContactMessageToDb = (message: ContactMessage) => setDocument('contactMessages', message.id, { ...message });
+export const updateContactMessageInDb = (id: string, data: Partial<ContactMessage>) => updateDocument('contactMessages', id, data);
+export const deleteContactMessageFromDb = (id: string) => deleteDocument('contactMessages', id);
+
+export const upsertUserInDb = (user: User) => setDocument('users', user.id, { ...user });
 export const updateSettingsInDb = (data: Partial<SiteSettings>) => updateDocument('settings', 'main', data);
 export const updateUserInDb = (id: string, data: Partial<User>) => updateDocument('users', id, data);

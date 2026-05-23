@@ -109,6 +109,31 @@ service cloud.firestore {
         && request.resource.data.country.size() <= 80;
     }
 
+    function validContactMessageCreate() {
+      return request.resource.data.keys().hasOnly([
+          'id', 'name', 'email', 'phone', 'subject', 'message',
+          'status', 'adminNote', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.id is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.email.matches('^.{3,120}$')
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() <= 30
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() > 1
+        && request.resource.data.subject.size() <= 120
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 5
+        && request.resource.data.message.size() <= 1500
+        && request.resource.data.status == 'new'
+        && request.resource.data.adminNote == ''
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string;
+    }
+
     match /services/{id} {
       allow read: if true;
       allow write: if isAdmin();
@@ -139,6 +164,11 @@ service cloud.firestore {
       allow read: if isAdmin() || (isAuthed() && resource.data.userId == request.auth.uid);
       allow create: if isAuthed() && validApplicationCreate();
       allow update, delete: if isAdmin();
+    }
+
+    match /contactMessages/{id} {
+      allow create: if validContactMessageCreate();
+      allow read, update, delete: if isAdmin();
     }
 
     match /users/{id} {

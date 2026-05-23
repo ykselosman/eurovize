@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FileText, Plus, Clock, CheckCircle, AlertCircle, Eye, X, User, Upload } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { statusColors } from '../data/initialData';
@@ -7,6 +7,7 @@ import { statusColors } from '../data/initialData';
 const Dashboard: React.FC = () => {
   const { currentUser, getUserApplications, services, createApplication, showToast } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showNewApp, setShowNewApp] = useState(false);
   const [selectedService, setSelectedService] = useState('');
   const [showDetail, setShowDetail] = useState<string | null>(null);
@@ -27,6 +28,18 @@ const Dashboard: React.FC = () => {
   });
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const serviceKey = searchParams.get('service');
+    if (!serviceKey) return;
+    const matched = services.find(s => s.id === serviceKey || s.slug === serviceKey);
+    if (!matched) return;
+    setSelectedService(matched.id);
+    setShowNewApp(true);
+    setAppStep(1);
+    navigate('/panel', { replace: true });
+  }, [location.search, navigate, services]);
 
   const handleFileSimulate = (docName: string) => {
     if (!uploadedDocs.includes(docName)) {

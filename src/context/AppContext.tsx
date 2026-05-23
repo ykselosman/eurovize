@@ -1,17 +1,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { Application, FAQ, PublicTracking, Service, SiteSettings, Testimonial, User } from '../types';
+import type { Application, ContactMessage, FAQ, PublicTracking, Service, SiteSettings, Testimonial, User } from '../types';
 import { initialFAQs, initialServices, initialSettings, initialTestimonials, statusMap } from '../data/initialData';
 import {
   addApplicationToDb,
+  addContactMessageToDb,
   addFAQToDb,
   addServiceToDb,
   addTestimonialToDb,
   deleteApplicationFromDb,
+  deleteContactMessageFromDb,
   deleteFAQFromDb,
   deleteServiceFromDb,
   deleteTestimonialFromDb,
   deleteTrackingFromDb,
   fetchAllApplications,
+  fetchAllContactMessages,
   fetchAllFAQs,
   fetchAllServices,
   fetchAllTestimonials,
@@ -28,16 +31,18 @@ import {
   seedFirestore,
   setupAuthListener,
   updateApplicationInDb,
+  updateContactMessageInDb,
   updateFAQInDb,
   updateServiceInDb,
   updateSettingsInDb,
   updateTestimonialInDb,
   updateUserInDb,
   upsertTrackingInDb,
+  upsertUserInDb,
 } from '../firebase';
 import { buildServiceSlug } from '../utils/slug';
 import { isAdminEmail } from '../utils/site';
-import { sanitizePhone, sanitizeText, sanitizeTextarea } from '../utils/sanitize';
+import { sanitizeEmail, sanitizePhone, sanitizeText, sanitizeTextarea } from '../utils/sanitize';
 
 interface ToastItem {
   id: string;
@@ -49,7 +54,7 @@ interface AppContextType {
   loading: boolean;
   currentUser: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  googleLogin: () => Promise<boolean>;
+  googleLogin: () => Promise<User | 'redirect' | null>;
   register: (name: string, email: string, password: string, phone: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (id: string, data: Partial<User>) => void;
@@ -75,6 +80,10 @@ interface AppContextType {
   addFAQ: (faq: FAQ) => void;
   updateFAQ: (id: string, faq: Partial<FAQ>) => void;
   deleteFAQ: (id: string) => void;
+  contactMessages: ContactMessage[];
+  createContactMessage: (message: Omit<ContactMessage, 'id' | 'status' | 'adminNote' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  updateContactMessage: (id: string, data: Partial<ContactMessage>) => void;
+  deleteContactMessage: (id: string) => void;
   settings: SiteSettings;
   updateSettings: (s: Partial<SiteSettings>) => void;
   users: User[];
@@ -130,11 +139,7 @@ const toPublicTracking = (application: Application): PublicTracking => ({
   country: application.country,
   status: application.status,
   statusName: application.statusName,
-  notes: application.notes.map(note => ({
-    date: note.date,
-    text: sanitizeText(note.text, 300),
-    by: note.by,
-  })),
+  notes: application.notes.map(note => ({ date: note.date, text: sanitizeText(note.text, 300), by: note.by })),
   createdAt: application.createdAt,
   updatedAt: application.updatedAt,
 });
@@ -143,6 +148,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<Service[]>(initialServices.map(normalizeService));
   const [applications, setApplications] = useState<Application[]>([]);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>(initialTestimonials);
   const [faqs, setFaqs] = useState<FAQ[]>(initialFAQs);
   const [settings, setSettings] = useState<SiteSettings>(initialSettings);
@@ -178,12 +184,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadAllData = useCallback(async (userId?: string, userRole?: User['role']) => {
     try {
-      const [serviceList, testimonialList, faqList, siteSettings, allUsers] = await Promise.all([
+      const [serviceList, testimonialList, faqList, siteSettings, allUsers, allContactMessages] = await Promise.all([
         fetchAllServices(),
         fetchAllTestimonials(),
         fetchAllFAQs(),
         fetchSettings(),
         userRole === 'admin' ? fetchAllUsers() : Promise.resolve([]),
+        userRole === 'admin' ? fetchAllContactMessages() : Promise.resolve([]),
       ]);
 
       if (serviceList.length > 0) setServices(serviceList.map(normalizeService).sort((a, b) => a.order - b.order));
@@ -191,14 +198,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (faqList.length > 0) setFaqs(faqList);
       setSettings(mergeSettings(siteSettings));
       if (allUsers.length > 0) setUsers(allUsers.map(normalizeUser));
+      if (allContactMessages.length > 0) setContactMessages(allContactMessages.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+      else if (userRole !== 'admin') setContactMessages([]);
 
-      if (userId && userRole === 'admin') {
-        setApplications(await fetchAllApplications());
-      } else if (userId) {
-        setApplications(await fetchApplicationsByUser(userId));
-      } else {
-        setApplications([]);
-      }
+      if (userId && userRole === 'admin') setApplications(await fetchAllApplications());
+      else if (userId) setApplications(await fetchApplicationsByUser(userId));
+      else setApplications([]);
     } catch {}
   }, []);
 
@@ -226,11 +231,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               role: isAdminEmail(firebaseUser.email) ? 'admin' : 'user',
               createdAt: new Date().toISOString(),
             });
+            if (!profile) upsertUserInDb(user).catch(() => {});
             setCurrentUser(user);
             await loadAllData(user.id, user.role);
           } else {
             setCurrentUser(null);
             setApplications([]);
+            setContactMessages([]);
           }
         } finally {
           if (mounted) setLoading(false);
@@ -259,19 +266,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const googleLogin = useCallback(async () => {
     try {
-      const profile = await firebaseGoogleLogin();
-      const user = normalizeUser(profile);
+      const result = await firebaseGoogleLogin();
+      if (result === 'redirect') return 'redirect';
+      if (!result) return null;
+      const user = normalizeUser(result);
+      upsertUserInDb(user).catch(() => {});
       setCurrentUser(user);
       await loadAllData(user.id, user.role);
-      return true;
+      return user;
     } catch {
-      return false;
+      return null;
     }
   }, [loadAllData]);
 
   const register = useCallback(async (name: string, email: string, password: string, phone: string) => {
     try {
-      const profile = await firebaseRegister(sanitizeText(name, 120), email.trim().toLowerCase(), password, sanitizePhone(phone));
+      const profile = await firebaseRegister(sanitizeText(name, 120), sanitizeEmail(email), password, sanitizePhone(phone));
       const user = normalizeUser(profile);
       setCurrentUser(user);
       setUsers(prev => [...prev.filter(item => item.id !== user.id), user]);
@@ -286,6 +296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     firebaseLogout().catch(() => {});
     setCurrentUser(null);
     setApplications([]);
+    setContactMessages([]);
   }, []);
 
   const updateUser = useCallback((id: string, data: Partial<User>) => {
@@ -293,7 +304,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       name: data.name ? sanitizeText(data.name, 120) : undefined,
       phone: data.phone !== undefined ? sanitizePhone(data.phone) : undefined,
     };
-
     setUsers(prev => prev.map(user => (user.id === id ? { ...user, ...safeData } : user)));
     setCurrentUser(prev => (prev && prev.id === id ? { ...prev, ...safeData } : prev));
     updateUserInDb(id, safeData).catch(() => {});
@@ -316,10 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const updateService = useCallback((id: string, data: Partial<Service>) => {
-    setServices(prev => prev.map(service => {
-      if (service.id !== id) return service;
-      return normalizeService({ ...service, ...data } as Service);
-    }).sort((a, b) => a.order - b.order));
+    setServices(prev => prev.map(service => service.id !== id ? service : normalizeService({ ...service, ...data } as Service)).sort((a, b) => a.order - b.order));
     updateServiceInDb(id, data).catch(() => {});
   }, []);
 
@@ -381,12 +388,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: now,
         notes: [...application.notes, { date: now, text: `Durum güncellendi: ${statusMap[status]}`, by: 'admin' }],
       };
-      updateApplicationInDb(id, {
-        status,
-        statusName: statusMap[status],
-        updatedAt: now,
-        notes: updated.notes,
-      }).catch(() => {});
+      updateApplicationInDb(id, { status, statusName: statusMap[status], updatedAt: now, notes: updated.notes }).catch(() => {});
       upsertTrackingInDb(toPublicTracking(updated)).catch(() => {});
       return updated;
     }));
@@ -398,11 +400,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const now = new Date().toISOString();
     setApplications(prev => prev.map(application => {
       if (application.id !== applicationId) return application;
-      const updated: Application = {
-        ...application,
-        updatedAt: now,
-        notes: [...application.notes, { date: now, text: cleaned, by: 'admin' }],
-      };
+      const updated: Application = { ...application, updatedAt: now, notes: [...application.notes, { date: now, text: cleaned, by: 'admin' }] };
       updateApplicationInDb(applicationId, { updatedAt: now, notes: updated.notes }).catch(() => {});
       upsertTrackingInDb(toPublicTracking(updated)).catch(() => {});
       return updated;
@@ -415,13 +413,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteTrackingFromDb(id).catch(() => {});
   }, []);
 
+  const createContactMessage = useCallback(async (message: Omit<ContactMessage, 'id' | 'status' | 'adminNote' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const now = new Date().toISOString();
+      const item: ContactMessage = {
+        id: generateId(),
+        name: sanitizeText(message.name, 120),
+        email: sanitizeEmail(message.email),
+        phone: sanitizePhone(message.phone),
+        subject: sanitizeText(message.subject, 120),
+        message: sanitizeTextarea(message.message, 1500),
+        status: 'new',
+        adminNote: '',
+        createdAt: now,
+        updatedAt: now,
+      };
+      await addContactMessageToDb(item);
+      setContactMessages(prev => [item, ...prev]);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const updateContactMessage = useCallback((id: string, data: Partial<ContactMessage>) => {
+    const safeData: Partial<ContactMessage> = {
+      subject: data.subject !== undefined ? sanitizeText(data.subject, 120) : undefined,
+      adminNote: data.adminNote !== undefined ? sanitizeTextarea(data.adminNote, 500) : undefined,
+      status: data.status,
+      updatedAt: new Date().toISOString(),
+    };
+    setContactMessages(prev => prev.map(item => item.id === id ? { ...item, ...safeData } as ContactMessage : item));
+    updateContactMessageInDb(id, safeData).catch(() => {});
+  }, []);
+
+  const deleteContactMessage = useCallback((id: string) => {
+    setContactMessages(prev => prev.filter(item => item.id !== id));
+    deleteContactMessageFromDb(id).catch(() => {});
+  }, []);
+
   const addTestimonial = useCallback((testimonial: Testimonial) => {
     setTestimonials(prev => [...prev, testimonial]);
     addTestimonialToDb(testimonial).catch(() => {});
   }, []);
 
   const updateTestimonial = useCallback((id: string, data: Partial<Testimonial>) => {
-    setTestimonials(prev => prev.map(item => (item.id === id ? { ...item, ...data } : item)));
+    setTestimonials(prev => prev.map(item => item.id === id ? { ...item, ...data } : item));
     updateTestimonialInDb(id, data).catch(() => {});
   }, []);
 
@@ -436,7 +473,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const updateFAQ = useCallback((id: string, data: Partial<FAQ>) => {
-    setFaqs(prev => prev.map(item => (item.id === id ? { ...item, ...data } : item)));
+    setFaqs(prev => prev.map(item => item.id === id ? { ...item, ...data } : item));
     updateFAQInDb(id, data).catch(() => {});
   }, []);
 
@@ -482,6 +519,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addFAQ,
         updateFAQ,
         deleteFAQ,
+        contactMessages,
+        createContactMessage,
+        updateContactMessage,
+        deleteContactMessage,
         settings,
         updateSettings,
         users,

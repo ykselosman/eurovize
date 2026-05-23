@@ -183,7 +183,7 @@ export const ServicesPage: React.FC = () => {
 export const ServiceDetailPage: React.FC = () => {
   const params = useParams<{ slug?: string; id?: string }>();
   const key = params.slug || params.id || '';
-  const { getService, services, settings } = useApp();
+  const { currentUser, getService, services, settings } = useApp();
   const service = getService(key);
   const seo = seoServiceDetail(service?.title || 'Vize Danışmanlığı', service?.country || 'Avrupa', service?.slug);
 
@@ -274,7 +274,7 @@ export const ServiceDetailPage: React.FC = () => {
                 <div className="flex justify-between text-sm"><span className="text-white/60">Başvuru Süresi:</span><span className="text-white font-semibold">{service.duration}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-white/60">Danışmanlık Ücreti:</span><span className="text-[#c9a84c] font-bold text-lg">{service.price}</span></div>
                 <div className="h-px bg-white/20" />
-                <Link to="/giris" className="block w-full text-center px-4 py-3 bg-[#c9a84c] text-[#0a1628] rounded-xl font-bold hover:bg-[#d4b65a] transition-colors">Başvuru Yap</Link>
+                <Link to={currentUser ? `/panel?service=${service.id}` : '/giris'} className="block w-full text-center px-4 py-3 bg-[#c9a84c] text-[#0a1628] rounded-xl font-bold hover:bg-[#d4b65a] transition-colors">{currentUser ? 'Başvuruya Devam Et' : 'Başvuru Yap'}</Link>
                 <a href={`https://wa.me/${settings.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition-colors">
                   <MessageCircle size={16} /> WhatsApp İletişim
                 </a>
@@ -397,7 +397,7 @@ export const ServiceDetailPage: React.FC = () => {
                     <div><div className="text-gray-500 text-xs">WhatsApp</div><div className="font-semibold text-green-600">Hemen Yazın</div></div>
                   </a>
                 </div>
-                <Link to="/giris" className="block w-full mt-4 px-4 py-3 bg-[#0f2b5b] text-white rounded-xl font-bold text-center hover:bg-[#1a3f7a] transition-colors">Online Başvuru Yap</Link>
+                <Link to={currentUser ? `/panel?service=${service.id}` : '/giris'} className="block w-full mt-4 px-4 py-3 bg-[#0f2b5b] text-white rounded-xl font-bold text-center hover:bg-[#1a3f7a] transition-colors">{currentUser ? 'Başvuru Paneline Git' : 'Online Başvuru Yap'}</Link>
                 <Link to="/iletisim" className="block w-full mt-2 px-4 py-3 border border-[#0f2b5b] text-[#0f2b5b] rounded-xl font-bold text-center hover:bg-blue-50 transition-colors">İletişim Formu</Link>
               </div>
 

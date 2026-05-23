@@ -58,6 +58,19 @@ export interface PublicTracking {
   updatedAt: string;
 }
 
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  status: 'new' | 'reviewed' | 'answered' | 'archived';
+  adminNote: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -157,4 +170,4 @@ export interface SiteSettings {
   }[];
 }
 
-export type AdminTab = 'dashboard' | 'services' | 'applications' | 'users' | 'testimonials' | 'faq' | 'settings';
+export type AdminTab = 'dashboard' | 'services' | 'applications' | 'messages' | 'users' | 'testimonials' | 'faq' | 'settings';
